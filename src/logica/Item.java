@@ -1,9 +1,11 @@
 package logica;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Item {
+public class Item implements Serializable {
+	private static final long serialVersionUID = 1L;
 	private String codigo;
     private String nombre;
     private String descripcion;
@@ -21,27 +23,29 @@ public class Item {
     }
     
     public boolean isPrestado() {
-    	return true;
+    	return prestamoActual != null;
     }
     
     public boolean puedeSerEliminado() {
-    	return true;
+    	return !isPrestado();
     }
     
     public void marcarPrestado(Prestamo prestamo) {
-    	
+    	if (!isPrestado() && prestamo != null) {
+            this.prestamoActual = prestamo;
+        }
     }
     
     public void marcarDisponible() {
-    	
+    	this.prestamoActual = null;
     }
     
     public void agregarCategoria(Categoria c) {
-    	
+    	if (!categorias.contains(c)) categorias.add(c);
     }
     
     public void eliminarCategoria(Categoria c) {
-    	
+    	categorias.remove(c);
     }
 
 	public String getCodigo() {

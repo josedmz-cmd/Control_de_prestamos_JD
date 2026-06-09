@@ -1,8 +1,10 @@
 package logica;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
-public class Alarma {
+public class Alarma implements Serializable {
+	private static final long serialVersionUID = 1L;
 	public enum TipoAlerta { UNICA, RECURRENTE }
 	private int id;
     private TipoAlerta tipo;

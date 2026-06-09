@@ -1,9 +1,11 @@
 package logica;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Categoria {
+public class Categoria implements Serializable {
+	private static final long serialVersionUID = 1L;
 	private String nombre;
     private List<Item> items;
     
@@ -13,11 +15,12 @@ public class Categoria {
     }
     
     public void agregarItem(Item i) {
-    	
+    	if (!items.contains(i)) 
+    		items.add(i);
     }
     
     public void eliminarItem(Item i) {
-    	
+    	items.remove(i);
     }
 
 	public String getNombre() {
