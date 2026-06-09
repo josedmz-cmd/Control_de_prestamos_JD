@@ -21,11 +21,11 @@ public class Item {
     }
     
     public boolean isPrestado() {
-    	
+    	return true;
     }
     
     public boolean puedeSerEliminado() {
-    	
+    	return true;
     }
     
     public void marcarPrestado(Prestamo prestamo) {

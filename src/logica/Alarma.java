@@ -17,16 +17,22 @@ public class Alarma {
         this.mensaje = mensaje;
     }
     
+    public boolean debeMostrarse(LocalDateTime ahora) {
+        return ahora != null && proximaEjecucion != null && !ahora.isBefore(proximaEjecucion);
+    }
+    
     public void reprogramar() {
-    	
+    	if (tipo == TipoAlerta.RECURRENTE && intervaloMinutos > 0) {
+            this.proximaEjecucion = this.proximaEjecucion.plusMinutes(intervaloMinutos);
+        }
     }
     
     public void cancelar() {
-    	
+    	this.proximaEjecucion = null;
     }
     
     public boolean isActiva() {
-    	
+    	return proximaEjecucion != null;
     }
     
 	public int getId() {

@@ -22,19 +22,42 @@ public class Prestamo {
     }
     
     public boolean agregarItem(Item item) {
-    	
+    	if (!activo)
+    		return false;
+    	if (item == null || item.isPrestado())
+    		return false;
+    	items.add(item);
+        item.marcarPrestado(this);
+        return true;
     }
     
     public boolean eliminarItem(Item item) {
-    	
+    	if (!activo)
+    		return false;
+        if (items.remove(item)) {
+            item.marcarDisponible();
+            return true;
+        }
+        return false;
     }
     
     public boolean retornarItem(Item item) {
-    	
+    	return eliminarItem(item);
     }
     
     public void finalizar() {
-    	
+    	if (!activo)
+    		return;
+        for (Item item : items) {
+            item.marcarDisponible();
+        }
+        items.clear();
+        this.activo = false;
+        this.fechaFin = LocalDateTime.now();
+        if (alarma != null) {
+            alarma.cancelar();
+            this.alarma = null;
+        }
     }
 
 	public int getId() {

@@ -17,15 +17,22 @@ public class Persona {
     }
 
     public boolean puedeSerEliminada() {
-    
+    	for (Prestamo p : prestamos) {
+    		if (p.isActivo()) {
+                return false;
+    		}
+    	}
+    	return true;
     }
     
     public void agregarPrestamo(Prestamo p) {
-        
+        if (!prestamos.contains(p)) {
+            prestamos.add(p);
+        }
     }
 
     public void eliminarPrestamo(Prestamo p) {
-
+        prestamos.remove(p);
     }
     
 	public String getNombre() {
