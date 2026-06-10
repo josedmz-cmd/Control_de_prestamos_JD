@@ -5,16 +5,16 @@ import java.time.LocalDateTime;
 
 public class Alarma implements Serializable {
 	private static final long serialVersionUID = 1L;
-	public enum TipoAlerta { UNICA, RECURRENTE }
+	public enum TipoAlarma { UNICA, RECURRENTE }
 	private int id;
-    private TipoAlerta tipo;
+    private TipoAlarma tipo;
     private int intervaloMinutos;
     private LocalDateTime proximaEjecucion;
     private String mensaje;
     
-    public Alarma(TipoAlerta tipo, int intervaloMinutos, LocalDateTime primeraEjecucion, String mensaje) {
+    public Alarma(TipoAlarma tipo, int intervaloMinutos, LocalDateTime primeraEjecucion, String mensaje) {
         this.tipo = tipo;
-        this.intervaloMinutos = (tipo == TipoAlerta.RECURRENTE) ? intervaloMinutos : 0;
+        this.intervaloMinutos = (tipo == TipoAlarma.RECURRENTE) ? intervaloMinutos : 0;
         this.proximaEjecucion = primeraEjecucion;
         this.mensaje = mensaje;
     }
@@ -24,7 +24,7 @@ public class Alarma implements Serializable {
     }
     
     public void reprogramar() {
-    	if (tipo == TipoAlerta.RECURRENTE && intervaloMinutos > 0) {
+    	if (tipo == TipoAlarma.RECURRENTE && intervaloMinutos > 0) {
             this.proximaEjecucion = this.proximaEjecucion.plusMinutes(intervaloMinutos);
         }
     }
@@ -45,11 +45,11 @@ public class Alarma implements Serializable {
 		this.id = id;
 	}
 
-	public TipoAlerta getTipo() {
+	public TipoAlarma getTipo() {
 		return tipo;
 	}
 
-	public void setTipo(TipoAlerta tipo) {
+	public void setTipo(TipoAlarma tipo) {
 		this.tipo = tipo;
 	}
 

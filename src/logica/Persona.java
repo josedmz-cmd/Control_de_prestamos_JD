@@ -64,4 +64,14 @@ public class Persona implements Serializable {
 	public List<Prestamo> getPrestamos() {
 		return prestamos;
 	}
+	
+	public List<Prestamo> getPrestamosActivos() {
+	    List<Prestamo> activos = new ArrayList<>();
+	    for (Prestamo p : prestamos) {
+	        if (p.isActivo()) {
+	            activos.add(p);
+	        }
+	    }
+	    return activos;
+	}
 }
