@@ -4,7 +4,6 @@ import logica.*;
 import java.io.*;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class Controladora implements Serializable {
 	private static final long serialVersionUID = 1L;
@@ -302,39 +301,121 @@ public class Controladora implements Serializable {
     
     public void crearAlarmaParaPrestamo(int idPrestamo, Alarma.TipoAlarma tipo, int intervaloMinutos,
             LocalDateTime primeraEjecucion, String mensaje) {
-
+    	Prestamo prestamo = buscarPrestamoPorId(idPrestamo);
+    	if (prestamo == null)
+    		throw new IllegalArgumentException("Préstamo no existe.");
+    	if (!prestamo.isActivo()) throw new IllegalStateException("No se pueden agregar alertas a un préstamo finalizado.");
+    	Alarma alerta = new Alarma(tipo, intervaloMinutos, primeraEjecucion, mensaje);
+    	alerta.setId(nextIdAlerta++);
+    	alarmas.add(alerta);
+    	prestamo.setAlarma(alerta);
     }
 
     public List<Alarma> getAlarmasPendientes(LocalDateTime ahora) {
-
+    	List<Alarma> pendientes = new ArrayList<>();
+        for (Alarma a : alarmas) {
+            if (a.debeMostrarse(ahora)) {
+                pendientes.add(a);
+            }
+        }
+        return pendientes;
     }
 
     public void reprogramarAlarma(int idAlarma) {
-
+	Alarma alarma = buscarAlarmaPorId(idAlarma);
+	if (alarma != null && alarma.getTipo() == Alarma.TipoAlarma.RECURRENTE) {
+		alarma.reprogramar();
+		}
 	}
     
     
     public String reportePorUsuario() {
-
+    	String resultado = "REPORTE POR USUARIO\n";
+        List<Persona> sorted = new ArrayList<>(personas.values());
+        sorted.sort(Comparator.comparing(Persona::getNombre));
+        for (Persona p : sorted) {
+            resultado += "Persona: " + p.getNombre() + ", Tel: " + p.getTelefono() + ", Email: " + p.getCorreo() + "\n";
+            List<Prestamo> activos = p.getPrestamosActivos();
+            if (activos.isEmpty()) {
+                resultado += "  Sin préstamos activos\n";
+            } else {
+                for (Prestamo prest : activos) {
+                    resultado += "  Préstamo #" + prest.getId() + " (Inicio: " + prest.getFechaInicio() + ")\n";
+                    for (Item item : prest.getItems()) {
+                        resultado += "    - " + item.getNombre() + " (Código: " + item.getCodigo() + ")\n";
+                    }
+                }
+            }
+            resultado += "\n";
+        }
+        return resultado;
     }
 
     public String reportePorItem() {
-
+    	String resultado = "REPORTE POR ÍTEM\n";
+    	List<Item> sorted = new ArrayList<>(items.values());
+        sorted.sort(Comparator.comparing(Item::getNombre));
+        for (Item i : sorted) {
+            resultado += "Ítem: " + i.getNombre() + ", Código: " + i.getCodigo() + ", Descripción: " + i.getDescripcion() + ", Prestado: " + (i.isPrestado() ? "Sí" : "No");
+            if (i.isPrestado() && i.getPrestamoActual() != null) {
+                resultado += ", Usuario: " + i.getPrestamoActual().getPersona().getNombre();
+            }
+            resultado += "\n";
+        }
+        return resultado;
     }
 
     public String reportePorCategoria() {
-
+    	String resultado = "REPORTE POR CATEGORÍA\n";
+    	List<Categoria> sorted = new ArrayList<>(categorias.values());
+        sorted.sort(Comparator.comparing(Categoria::getNombre));
+        for (Categoria cat : sorted) {
+            resultado += "Categoría: " + cat.getNombre() + "\n";
+            if (cat.getItems().isEmpty()) {
+                resultado += "  Sin ítems\n";
+            } else {
+                for (Item i : cat.getItems()) {
+                    resultado += "  - " + i.getNombre() + " (Código: " + i.getCodigo() + ")\n";
+                }
+            }
+            resultado += "\n";
+        }
+        return resultado;
     }
 
     public String reportePorTipo() {
-
+    	String resultado = "REPORTE POR TIPO\n";
+    	List<Tipo> sorted = new ArrayList<>(tipos.values());
+        sorted.sort(Comparator.comparing(Tipo::getNombre));
+        for (Tipo t : sorted) {
+            resultado += "Tipo: " + t.getNombre() + "\n";
+            if (t.getItems().isEmpty()) {
+                resultado += "  Sin ítems\n";
+            } else {
+                for (Item i : t.getItems()) {
+                    resultado += "  - " + i.getNombre() + " (Código: " + i.getCodigo() + ")\n";
+                }
+            }
+            resultado += "\n";
+        }
+        return resultado;
     }
     
     private Prestamo buscarPrestamoPorId(int id) {
-
+    	for (Prestamo p : prestamos) {
+            if (p.getId() == id) {
+                return p;
+            }
+        }
+        return null;
     }
 
     private Alarma buscarAlarmaPorId(int id) {
-
+    	for (Alarma a : alarmas) {
+            if (a.getId() == id) {
+                return a;
+            }
+        }
+        return null;
     }
 }
