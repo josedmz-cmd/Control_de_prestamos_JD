@@ -418,4 +418,20 @@ public class Controladora implements Serializable {
         }
         return null;
     }
+    
+    public static void guardarDatos() throws IOException {
+        FileOutputStream file = new FileOutputStream("Prestamos.dat");
+        ObjectOutputStream stream = new ObjectOutputStream(file);
+        stream.writeObject(instance);
+        stream.close();
+        file.close();
+    }
+    
+    public static void cargarDatos() throws IOException, ClassNotFoundException {
+        FileInputStream file = new FileInputStream("Prestamos.dat");
+        ObjectInputStream stream = new ObjectInputStream(file);
+        instance = (Controladora) stream.readObject();
+        stream.close();
+        file.close();
+    }
 }
