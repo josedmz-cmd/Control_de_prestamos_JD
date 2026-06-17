@@ -19,12 +19,23 @@ public class Interfaz_principal {
 	private JFrame frame;
 	private Controladora control;
 
-	private JTable tablePrestamos;
+	private JTable tablePersonas;
+    private DefaultTableModel modelPersonas;
+    private JTextField txtNombrePersona, txtTelefonoPersona, txtCorreoPersona;
+    private JTable tableItems;
+    private DefaultTableModel modelItems;
+    private JTextField txtCodigoItem, txtNombreItem, txtDescripcionItem;
+    private JComboBox<String> cbTipoItem;
+    private JTable tableTipos;
+    private DefaultTableModel modelTipos;
+    private JTextField txtNombreTipo;
+    private JTable tablePrestamos;
     private DefaultTableModel modelPrestamos;
     private JComboBox<String> cbPersonaPrestamo;
     private JList<String> listItemsDisponibles, listItemsPrestamo;
     private DefaultListModel<String> listModelDisponibles, listModelPrestamo;
     private int currentPrestamoId = -1;
+    private JTextArea txtReporte;
     private Timer timerAlertas;
 	/**
 	 * Launch the application.
@@ -319,17 +330,411 @@ public class Interfaz_principal {
         }
     }
 	
-    private JPanel crearPanelAdministracion() {
-        JPanel panel = new JPanel(new BorderLayout());
-        return panel;
+	private JPanel crearPanelAdministracion() {
+	    JPanel Administración = new JPanel(new BorderLayout());
+	    JTabbedPane subTabs = new JTabbedPane();
+
+	    subTabs.addTab("Personas", crearPanelPersonas());
+        subTabs.addTab("Ítems", crearPanelItems());
+        subTabs.addTab("Tipos", crearPanelTipos());
+
+	    Administración.add(subTabs, BorderLayout.CENTER);
+	    return Administración;
+	}
+
+	private JPanel crearPanelPersonas() {
+	    JPanel Personas = new JPanel(new BorderLayout(10, 10));
+	    Personas.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+	    modelPersonas = new DefaultTableModel(new String[]{"Nombre", "Teléfono", "Correo"}, 0);
+	    tablePersonas = new JTable(modelPersonas);
+	    Personas.add(new JScrollPane(tablePersonas), BorderLayout.CENTER);
+	  
+	    JPanel Datos = new JPanel(new GridLayout(4, 2, 5, 5));
+	    Datos.setBorder(BorderFactory.createTitledBorder("Datos de Persona"));
+	    Datos.add(new JLabel("Nombre:"));
+	    txtNombrePersona = new JTextField();
+	    Datos.add(txtNombrePersona);
+	    Datos.add(new JLabel("Teléfono:"));
+	    txtTelefonoPersona = new JTextField();
+	    Datos.add(txtTelefonoPersona);
+	    Datos.add(new JLabel("Correo:"));
+	    txtCorreoPersona = new JTextField();
+	    Datos.add(txtCorreoPersona);
+
+	    JPanel Botones = new JPanel(new FlowLayout());
+	    JButton btnCrear = new JButton("Crear");
+	    JButton btnModificar = new JButton("Modificar");
+	    JButton btnBorrar = new JButton("Borrar");
+	    JButton btnLimpiar = new JButton("Limpiar");
+	    Botones.add(btnCrear);
+	    Botones.add(btnModificar);
+	    Botones.add(btnBorrar);
+	    Botones.add(btnLimpiar);
+	    Datos.add(Botones);
+
+	    Personas.add(Datos, BorderLayout.SOUTH);
+
+	    btnCrear.addActionListener(e -> crearPersona());
+	    btnModificar.addActionListener(e -> modificarPersona());
+	    btnBorrar.addActionListener(e -> borrarPersona());
+	    btnLimpiar.addActionListener(e -> limpiarFormPersonas());
+	    tablePersonas.getSelectionModel().addListSelectionListener(e -> cargarPersonaSeleccionada());
+
+	    actualizarTablaPersonas();
+	    return Personas;
+	}
+	
+	private void actualizarTablaPersonas() {
+	    modelPersonas.setRowCount(0);
+	    for (Persona p : control.listarPersonas()) {
+	        modelPersonas.addRow(new Object[]{p.getNombre(), p.getTelefono(), p.getCorreo()});
+	    }
+	    actualizarCombosPrestamos();
+	}
+
+	private void cargarPersonaSeleccionada() {
+	    int row = tablePersonas.getSelectedRow();
+	    if (row != -1) {
+	        txtNombrePersona.setText((String) modelPersonas.getValueAt(row, 0));
+	        txtTelefonoPersona.setText((String) modelPersonas.getValueAt(row, 1));
+	        txtCorreoPersona.setText((String) modelPersonas.getValueAt(row, 2));
+	    }
+	}
+
+	private void limpiarFormPersonas() {
+	    txtNombrePersona.setText("");
+	    txtTelefonoPersona.setText("");
+	    txtCorreoPersona.setText("");
+	    tablePersonas.clearSelection();
+	}
+
+	private void crearPersona() {
+	    try {
+	        control.crearPersona(txtNombrePersona.getText(), txtTelefonoPersona.getText(), txtCorreoPersona.getText());
+	        actualizarTablaPersonas();
+	        limpiarFormPersonas();
+	        JOptionPane.showMessageDialog(frame, "Persona creada exitosamente.");
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(frame, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 	
-    private JPanel crearPanelReportes() {
-        JPanel panel = new JPanel(new BorderLayout());
-        return panel;
+	private void modificarPersona() {
+        int row = tablePersonas.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(frame, "Seleccione una persona para modificar.");
+            return;
+        }
+        String telefonoAntiguo = (String) modelPersonas.getValueAt(row, 1);
+        try {
+            control.modificarPersona(telefonoAntiguo, txtNombrePersona.getText(),
+                    txtTelefonoPersona.getText(), txtCorreoPersona.getText());
+            actualizarTablaPersonas();
+            limpiarFormPersonas();
+            JOptionPane.showMessageDialog(frame, "Persona modificada.");
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(frame, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void borrarPersona() {
+        int row = tablePersonas.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(frame, "Seleccione una persona para borrar.");
+            return;
+        }
+        String telefono = (String) modelPersonas.getValueAt(row, 1);
+        int confirm = JOptionPane.showConfirmDialog(frame, "¿Borrar a " + modelPersonas.getValueAt(row, 0) + "?",
+                "Confirmar", JOptionPane.YES_NO_OPTION);
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                control.borrarPersona(telefono);
+                actualizarTablaPersonas();
+                limpiarFormPersonas();
+                JOptionPane.showMessageDialog(frame, "Persona borrada.");
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(frame, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+	private JPanel crearPanelItems() {
+	    JPanel Ítems = new JPanel(new BorderLayout(10, 10));
+	    Ítems.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+	    modelItems = new DefaultTableModel(new String[]{"Código", "Nombre", "Descripción", "Tipo", "Prestado"}, 0);
+	    tableItems = new JTable(modelItems);
+	    Ítems.add(new JScrollPane(tableItems), BorderLayout.CENTER);
+
+	    JPanel Datos = new JPanel(new GridLayout(4, 2, 5, 5));
+	    Datos.setBorder(BorderFactory.createTitledBorder("Datos del Ítem"));
+	    Datos.add(new JLabel("Código:"));
+        txtCodigoItem = new JTextField();
+        Datos.add(txtCodigoItem);
+        Datos.add(new JLabel("Nombre:"));
+        txtNombreItem = new JTextField();
+        Datos.add(txtNombreItem);
+        Datos.add(new JLabel("Descripción:"));
+        txtDescripcionItem = new JTextField();
+        Datos.add(txtDescripcionItem);
+        Datos.add(new JLabel("Tipo:"));
+        cbTipoItem = new JComboBox<>();
+        Datos.add(cbTipoItem);
+
+	    JPanel Botones = new JPanel(new FlowLayout());
+	    JButton btnCrear = new JButton("Crear");
+	    JButton btnModificar = new JButton("Modificar");
+	    JButton btnBorrar = new JButton("Borrar");
+	    JButton btnLimpiar = new JButton("Limpiar");
+	    Botones.add(btnCrear);
+        Botones.add(btnModificar);
+        Botones.add(btnBorrar);
+        Botones.add(btnLimpiar);
+        Datos.add(Botones);
+        
+	    Ítems.add(Datos, BorderLayout.SOUTH);
+
+	    btnCrear.addActionListener(e -> crearItem());
+        btnModificar.addActionListener(e -> modificarItem());
+        btnBorrar.addActionListener(e -> borrarItem());
+        btnLimpiar.addActionListener(e -> limpiarFormItems());
+        tableItems.getSelectionModel().addListSelectionListener(e -> cargarItemSeleccionado());
+
+        actualizarTablaItems();
+        actualizarCombosTipos();
+        return Ítems;
+	}
+	
+	private void actualizarTablaItems() {
+        modelItems.setRowCount(0);
+        for (Item i : control.listarItems()) {
+            modelItems.addRow(new Object[]{i.getCodigo(), i.getNombre(), i.getDescripcion(),
+                    i.getTipo().getNombre(), i.isPrestado() ? "Sí" : "No"});
+        }
+        actualizarListasItemsDisponibles();
+    }
+
+	private void cargarItemSeleccionado() {
+        int row = tableItems.getSelectedRow();
+        if (row != -1) {
+            String codigo = (String) modelItems.getValueAt(row, 0);
+            Item item = control.consultarItem(codigo);
+            if (item != null) {
+                txtCodigoItem.setText(item.getCodigo());
+                txtNombreItem.setText(item.getNombre());
+                txtDescripcionItem.setText(item.getDescripcion());
+                cbTipoItem.setSelectedItem(item.getTipo().getNombre());
+            }
+        }
+    }
+
+    private void limpiarFormItems() {
+        txtCodigoItem.setText("");
+        txtNombreItem.setText("");
+        txtDescripcionItem.setText("");
+        cbTipoItem.setSelectedIndex(0);
+        tableItems.clearSelection();
+    }
+
+    private void crearItem() {
+        try {
+            control.crearItem(txtCodigoItem.getText(), txtNombreItem.getText(), txtDescripcionItem.getText(),
+                    (String) cbTipoItem.getSelectedItem(), List.of()); // Sin categorías
+            actualizarTablaItems();
+            limpiarFormItems();
+            JOptionPane.showMessageDialog(frame, "Ítem creado.");
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(frame, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void modificarItem() {
+        int row = tableItems.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(frame, "Seleccione un ítem para modificar.");
+            return;
+        }
+        String codigoAntiguo = (String) modelItems.getValueAt(row, 0);
+        try {
+            control.modificarItem(codigoAntiguo, txtCodigoItem.getText(), txtNombreItem.getText(),
+                    txtDescripcionItem.getText(), (String) cbTipoItem.getSelectedItem(), List.of());
+            actualizarTablaItems();
+            limpiarFormItems();
+            JOptionPane.showMessageDialog(frame, "Ítem modificado.");
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(frame, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void borrarItem() {
+        int row = tableItems.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(frame, "Seleccione un ítem para borrar.");
+            return;
+        }
+        String codigo = (String) modelItems.getValueAt(row, 0);
+        int confirm = JOptionPane.showConfirmDialog(frame, "¿Borrar ítem " + codigo + "?", "Confirmar", JOptionPane.YES_NO_OPTION);
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                control.borrarItem(codigo);
+                actualizarTablaItems();
+                limpiarFormItems();
+                JOptionPane.showMessageDialog(frame, "Ítem borrado.");
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(frame, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+    
+    private JPanel crearPanelTipos() {
+        JPanel Tipos = new JPanel(new BorderLayout(10, 10));
+        Tipos.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        modelTipos = new DefaultTableModel(new String[]{"Nombre"}, 0);
+        tableTipos = new JTable(modelTipos);
+        Tipos.add(new JScrollPane(tableTipos), BorderLayout.CENTER);
+
+        JPanel Datos = new JPanel(new GridLayout(2, 2, 5, 5));
+        Datos.setBorder(BorderFactory.createTitledBorder("Datos del Tipo"));
+        Datos.add(new JLabel("Nombre:"));
+        txtNombreTipo = new JTextField();
+        Datos.add(txtNombreTipo);
+
+        JPanel Botones = new JPanel(new FlowLayout());
+        JButton btnCrear = new JButton("Crear");
+        JButton btnModificar = new JButton("Modificar");
+        JButton btnBorrar = new JButton("Borrar");
+        JButton btnLimpiar = new JButton("Limpiar");
+        Botones.add(btnCrear);
+        Botones.add(btnModificar);
+        Botones.add(btnBorrar);
+        Botones.add(btnLimpiar);
+        Datos.add(Botones);
+
+        Tipos.add(Datos, BorderLayout.SOUTH);
+
+        btnCrear.addActionListener(e -> crearTipo());
+        btnModificar.addActionListener(e -> modificarTipo());
+        btnBorrar.addActionListener(e -> borrarTipo());
+        btnLimpiar.addActionListener(e -> limpiarFormTipos());
+        tableTipos.getSelectionModel().addListSelectionListener(e -> cargarTipoSeleccionado());
+
+        actualizarTablaTipos();
+        return Tipos;
+    }
+
+    private void actualizarTablaTipos() {
+        modelTipos.setRowCount(0);
+        for (Tipo t : control.listarTipos()) {
+            modelTipos.addRow(new Object[]{t.getNombre()});
+        }
+        actualizarCombosTipos();
+    }
+
+    private void cargarTipoSeleccionado() {
+        int row = tableTipos.getSelectedRow();
+        if (row != -1) {
+            txtNombreTipo.setText((String) modelTipos.getValueAt(row, 0));
+        }
+    }
+
+    private void limpiarFormTipos() {
+        txtNombreTipo.setText("");
+        tableTipos.clearSelection();
+    }
+
+    private void crearTipo() {
+        try {
+            control.crearTipo(txtNombreTipo.getText());
+            actualizarTablaTipos();
+            limpiarFormTipos();
+            JOptionPane.showMessageDialog(frame, "Tipo creado.");
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(frame, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void modificarTipo() {
+        int row = tableTipos.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(frame, "Seleccione un tipo para modificar.");
+            return;
+        }
+        String nombreAntiguo = (String) modelTipos.getValueAt(row, 0);
+        try {
+            control.modificarTipo(nombreAntiguo, txtNombreTipo.getText());
+            actualizarTablaTipos();
+            limpiarFormTipos();
+            JOptionPane.showMessageDialog(frame, "Tipo modificado.");
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(frame, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void borrarTipo() {
+        int row = tableTipos.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(frame, "Seleccione un tipo para borrar.");
+            return;
+        }
+        String nombre = (String) modelTipos.getValueAt(row, 0);
+        if ("Genérico".equals(nombre)) {
+            JOptionPane.showMessageDialog(frame, "No se puede borrar el tipo Genérico.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        int confirm = JOptionPane.showConfirmDialog(frame, "¿Borrar tipo '" + nombre + "'? Los ítems pasarán al tipo 'Genérico'.",
+                "Confirmar", JOptionPane.YES_NO_OPTION);
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                control.borrarTipo(nombre);
+                actualizarTablaTipos();
+                limpiarFormTipos();
+                JOptionPane.showMessageDialog(frame, "Tipo borrado.");
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(frame, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+	
+	private void actualizarCombosTipos() {
+	    cbTipoItem.removeAllItems();
+	    for (Tipo t : control.listarTipos()) {
+	        cbTipoItem.addItem(t.getNombre());
+	    }
+	}
+	
+	private JPanel crearPanelReportes() {
+        JPanel Reportes = new JPanel(new BorderLayout(10, 10));
+        Reportes.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        JPanel Botones = new JPanel(new FlowLayout());
+        JButton btnUsuarios = new JButton("Por Usuario");
+        JButton btnItems = new JButton("Por Ítem");
+        JButton btnCategorias = new JButton("Por Categoría");
+        JButton btnTipos = new JButton("Por Tipo");
+        Botones.add(btnUsuarios);
+        Botones.add(btnItems);
+        Botones.add(btnCategorias);
+        Botones.add(btnTipos);
+        Reportes.add(Botones, BorderLayout.NORTH);
+
+        txtReporte = new JTextArea();
+        txtReporte.setEditable(false);
+        Reportes.add(new JScrollPane(txtReporte), BorderLayout.CENTER);
+
+        btnUsuarios.addActionListener(e -> txtReporte.setText(control.reportePorUsuario()));
+        btnItems.addActionListener(e -> txtReporte.setText(control.reportePorItem()));
+        btnCategorias.addActionListener(e -> txtReporte.setText(control.reportePorCategoria()));
+        btnTipos.addActionListener(e -> txtReporte.setText(control.reportePorTipo()));
+
+        return Reportes;
     }
 	
 	private void cargarDatosIniciales() {
+        actualizarTablaPersonas();
+        actualizarTablaItems();
+        actualizarTablaTipos();
         actualizarCombosPrestamos();
         actualizarListasItemsDisponibles();
         actualizarTablaPrestamos();
