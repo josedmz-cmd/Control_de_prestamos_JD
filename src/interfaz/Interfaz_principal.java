@@ -26,9 +26,14 @@ public class Interfaz_principal {
     private DefaultTableModel modelItems;
     private JTextField txtCodigoItem, txtNombreItem, txtDescripcionItem;
     private JComboBox<String> cbTipoItem;
+    private JList<String> listCategoriasItem;
+    private DefaultListModel<String> listModelCategoriasItem;
     private JTable tableTipos;
     private DefaultTableModel modelTipos;
     private JTextField txtNombreTipo;
+    private JTable tableCategorias;
+    private DefaultTableModel modelCategorias;
+    private JTextField txtNombreCategoria;
     private JTable tablePrestamos;
     private DefaultTableModel modelPrestamos;
     private JComboBox<String> cbPersonaPrestamo;
@@ -337,6 +342,7 @@ public class Interfaz_principal {
 	    subTabs.addTab("Personas", crearPanelPersonas());
         subTabs.addTab("Ítems", crearPanelItems());
         subTabs.addTab("Tipos", crearPanelTipos());
+        subTabs.addTab("Categorías", crearPanelCategorias());
 
 	    Administración.add(subTabs, BorderLayout.CENTER);
 	    return Administración;
@@ -467,9 +473,9 @@ public class Interfaz_principal {
 	    tableItems = new JTable(modelItems);
 	    Ítems.add(new JScrollPane(tableItems), BorderLayout.CENTER);
 
-	    JPanel Datos = new JPanel(new GridLayout(4, 2, 5, 5));
-	    Datos.setBorder(BorderFactory.createTitledBorder("Datos del Ítem"));
-	    Datos.add(new JLabel("Código:"));
+	    JPanel Datos = new JPanel(new GridLayout(6, 2, 5, 5));
+        Datos.setBorder(BorderFactory.createTitledBorder("Datos del Ítem"));
+        Datos.add(new JLabel("Código:"));
         txtCodigoItem = new JTextField();
         Datos.add(txtCodigoItem);
         Datos.add(new JLabel("Nombre:"));
@@ -481,6 +487,12 @@ public class Interfaz_principal {
         Datos.add(new JLabel("Tipo:"));
         cbTipoItem = new JComboBox<>();
         Datos.add(cbTipoItem);
+        Datos.add(new JLabel("Categorías (Ctrl+clic múltiple):"));
+        listModelCategoriasItem = new DefaultListModel<>();
+        listCategoriasItem = new JList<>(listModelCategoriasItem);
+        listCategoriasItem.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        listCategoriasItem.setVisibleRowCount(3);
+        Datos.add(new JScrollPane(listCategoriasItem));
 
 	    JPanel Botones = new JPanel(new FlowLayout());
 	    JButton btnCrear = new JButton("Crear");
@@ -503,6 +515,7 @@ public class Interfaz_principal {
 
         actualizarTablaItems();
         actualizarCombosTipos();
+        actualizarListaCategoriasDisponibles();
         return Ítems;
 	}
 	
@@ -515,7 +528,7 @@ public class Interfaz_principal {
         actualizarListasItemsDisponibles();
     }
 
-	private void cargarItemSeleccionado() {
+    private void cargarItemSeleccionado() {
         int row = tableItems.getSelectedRow();
         if (row != -1) {
             String codigo = (String) modelItems.getValueAt(row, 0);
@@ -525,6 +538,13 @@ public class Interfaz_principal {
                 txtNombreItem.setText(item.getNombre());
                 txtDescripcionItem.setText(item.getDescripcion());
                 cbTipoItem.setSelectedItem(item.getTipo().getNombre());
+                List<String> cats = item.getCategorias().stream().map(Categoria::getNombre).toList();
+                listCategoriasItem.clearSelection();
+                for (int i = 0; i < listModelCategoriasItem.size(); i++) {
+                    if (cats.contains(listModelCategoriasItem.get(i))) {
+                        listCategoriasItem.addSelectionInterval(i, i);
+                    }
+                }
             }
         }
     }
@@ -534,13 +554,15 @@ public class Interfaz_principal {
         txtNombreItem.setText("");
         txtDescripcionItem.setText("");
         cbTipoItem.setSelectedIndex(0);
+        listCategoriasItem.clearSelection();
         tableItems.clearSelection();
     }
 
     private void crearItem() {
         try {
+            List<String> cats = listCategoriasItem.getSelectedValuesList();
             control.crearItem(txtCodigoItem.getText(), txtNombreItem.getText(), txtDescripcionItem.getText(),
-                    (String) cbTipoItem.getSelectedItem(), List.of()); // Sin categorías
+                    (String) cbTipoItem.getSelectedItem(), cats);
             actualizarTablaItems();
             limpiarFormItems();
             JOptionPane.showMessageDialog(frame, "Ítem creado.");
@@ -557,8 +579,9 @@ public class Interfaz_principal {
         }
         String codigoAntiguo = (String) modelItems.getValueAt(row, 0);
         try {
+            List<String> cats = listCategoriasItem.getSelectedValuesList();
             control.modificarItem(codigoAntiguo, txtCodigoItem.getText(), txtNombreItem.getText(),
-                    txtDescripcionItem.getText(), (String) cbTipoItem.getSelectedItem(), List.of());
+                    txtDescripcionItem.getText(), (String) cbTipoItem.getSelectedItem(), cats);
             actualizarTablaItems();
             limpiarFormItems();
             JOptionPane.showMessageDialog(frame, "Ítem modificado.");
@@ -697,10 +720,122 @@ public class Interfaz_principal {
         }
     }
 	
+    private JPanel crearPanelCategorias() {
+        JPanel Categorías = new JPanel(new BorderLayout(10, 10));
+        Categorías.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        modelCategorias = new DefaultTableModel(new String[]{"Nombre"}, 0);
+        tableCategorias = new JTable(modelCategorias);
+        Categorías.add(new JScrollPane(tableCategorias), BorderLayout.CENTER);
+
+        JPanel Datos = new JPanel(new GridLayout(2, 2, 5, 5));
+        Datos.setBorder(BorderFactory.createTitledBorder("Datos de la Categoría"));
+        Datos.add(new JLabel("Nombre:"));
+        txtNombreCategoria = new JTextField();
+        Datos.add(txtNombreCategoria);
+
+        JPanel Botones = new JPanel(new FlowLayout());
+        JButton btnCrear = new JButton("Crear");
+        JButton btnModificar = new JButton("Modificar");
+        JButton btnBorrar = new JButton("Borrar");
+        JButton btnLimpiar = new JButton("Limpiar");
+        Botones.add(btnCrear);
+        Botones.add(btnModificar);
+        Botones.add(btnBorrar);
+        Botones.add(btnLimpiar);
+        Datos.add(Botones);
+
+        Categorías.add(Datos, BorderLayout.SOUTH);
+
+        btnCrear.addActionListener(e -> crearCategoria());
+        btnModificar.addActionListener(e -> modificarCategoria());
+        btnBorrar.addActionListener(e -> borrarCategoria());
+        btnLimpiar.addActionListener(e -> limpiarFormCategorias());
+        tableCategorias.getSelectionModel().addListSelectionListener(e -> cargarCategoriaSeleccionada());
+
+        actualizarTablaCategorias();
+        return Categorías;
+    }
+
+    private void actualizarTablaCategorias() {
+        modelCategorias.setRowCount(0);
+        for (Categoria c : control.listarCategorias()) {
+            modelCategorias.addRow(new Object[]{c.getNombre()});
+        }
+        actualizarListaCategoriasDisponibles();
+    }
+
+    private void cargarCategoriaSeleccionada() {
+        int row = tableCategorias.getSelectedRow();
+        if (row != -1) {
+            txtNombreCategoria.setText((String) modelCategorias.getValueAt(row, 0));
+        }
+    }
+
+    private void limpiarFormCategorias() {
+        txtNombreCategoria.setText("");
+        tableCategorias.clearSelection();
+    }
+
+    private void crearCategoria() {
+        try {
+            control.crearCategoria(txtNombreCategoria.getText());
+            actualizarTablaCategorias();
+            limpiarFormCategorias();
+            JOptionPane.showMessageDialog(frame, "Categoría creada.");
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(frame, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void modificarCategoria() {
+        int row = tableCategorias.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(frame, "Seleccione una categoría para modificar.");
+            return;
+        }
+        String nombreAntiguo = (String) modelCategorias.getValueAt(row, 0);
+        try {
+            control.modificarCategoria(nombreAntiguo, txtNombreCategoria.getText());
+            actualizarTablaCategorias();
+            limpiarFormCategorias();
+            JOptionPane.showMessageDialog(frame, "Categoría modificada.");
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(frame, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void borrarCategoria() {
+        int row = tableCategorias.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(frame, "Seleccione una categoría para borrar.");
+            return;
+        }
+        String nombre = (String) modelCategorias.getValueAt(row, 0);
+        int confirm = JOptionPane.showConfirmDialog(frame, "¿Borrar categoría '" + nombre + "'?", "Confirmar", JOptionPane.YES_NO_OPTION);
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                control.borrarCategoria(nombre);
+                actualizarTablaCategorias();
+                limpiarFormCategorias();
+                JOptionPane.showMessageDialog(frame, "Categoría borrada.");
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(frame, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+	
 	private void actualizarCombosTipos() {
 	    cbTipoItem.removeAllItems();
 	    for (Tipo t : control.listarTipos()) {
 	        cbTipoItem.addItem(t.getNombre());
+	    }
+	}
+
+	private void actualizarListaCategoriasDisponibles() {
+	    listModelCategoriasItem.clear();
+	    for (Categoria c : control.listarCategorias()) {
+	        listModelCategoriasItem.addElement(c.getNombre());
 	    }
 	}
 	
@@ -734,6 +869,7 @@ public class Interfaz_principal {
 	private void cargarDatosIniciales() {
         actualizarTablaPersonas();
         actualizarTablaItems();
+        actualizarTablaCategorias();
         actualizarTablaTipos();
         actualizarCombosPrestamos();
         actualizarListasItemsDisponibles();
